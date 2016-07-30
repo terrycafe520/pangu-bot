@@ -1,0 +1,31 @@
+{
+  "name": "pangu-bot",
+  "version": "0.0.1",
+  "description": "Bot will tell you how to speak.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magicae/pangu-bot.git"
+  },
+  "keywords": [
+    "Pangu",
+    "Bot",
+    "Telegram"
+  ],
+  "author": "Magica <readme.md@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/magicae/pangu-bot/issues"
+  },
+  "homepage": "https://github.com/magicae/pangu-bot#readme",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "morgan": "^1.7.0",
+    "pangu": "^3.2.1",
+    "request": "^2.74.0"
+  }
+}
