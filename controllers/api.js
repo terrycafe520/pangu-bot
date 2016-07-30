@@ -1,6 +1,7 @@
 const { Router } = require('express')
 const request = require('request')
 const pangu = require('pangu')
+const { User, Chat, ChatUser } = require('../models')
 
 const router = Router()
 
@@ -55,8 +56,8 @@ router.post('/', (req, res) => {
   if (message.text !== panguText) {
     const reply = `
 <b>${getHello()}！請跟我讀：</b>
-${panguText}
-`
+${panguText}`
+    // Send reply
     request.post({
       uri: `${API_URL}/sendMessage`,
       form: {
@@ -67,7 +68,35 @@ ${panguText}
       }
     }, (err, response, body) => {
       if (err) { console.error('[ERROR] Send Message', err) }
-      console.log(body)
+    })
+    // Update database
+    Promise.all([
+      // Get user
+      User.findOrCreate({
+        where: { id: message.from.id },
+        defaults: {
+          id: message.from.id,
+          username: message.from.username,
+          firstName: message.from.first_name,
+          lastName: message.from.last_name
+        }
+      }),
+      // Get chat
+      Chat.findOrCreate({
+        where: { id: message.chat.id },
+        defaults: {
+          id: message.chat.id,
+          title: message.chat.title
+        }
+      })
+    ]).then(res => {
+      const [user, chat] = res
+      return Promise.all([
+        user.increment('count', { by: 1 }),
+        chat.addUser(user)
+      ])
+    }).catch(err => {
+      console.error(err)
     })
   }
   return res.json({ code: 0 })
