@@ -1,3 +1,3 @@
-module.exports = function (db) {
+module.exports = (db) => (
   db.define('chatuser', {})
-}
+)

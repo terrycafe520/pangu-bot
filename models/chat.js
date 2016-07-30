@@ -1,8 +1,8 @@
 const Sequelize = require('sequelize')
 
-module.exports = function (db) {
+module.exports = (db) => (
   db.define('chat', {
-    id: { type: Sequelize.INTEGER },
+    id: { type: Sequelize.INTEGER, primaryKey: true },
     title: { type: Sequelize.STRING }
   })
-}
+)

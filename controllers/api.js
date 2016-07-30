@@ -47,49 +47,97 @@ function getHello() {
   return SAY_HELLOS[parseInt(Math.random() * SAY_HELLOS.length)]
 }
 
+function apiRequest(action, options) {
+  return new Promise(function (resolve, reject) {
+    request.post({
+      uri: `${API_URL}/${action}`,
+      form: options
+    }, (err, response, body) => {
+      if (err) { return reject(err) }
+      else { return resolve(response) }
+    })
+  })
+}
+
 router.post('/', (req, res) => {
   const message = req.body.message || req.body.edited_message
   if (!message.text)
     return res.json({ code: -1 })
+  if (message.text === '/rank@pangu_bot') {
+    if (message.chat.type === 'private') {
+      User.find({ where: { id: message.from.id } }).then(user => {
+        const reply = `${user.firstName} ${user.lastName}(@${user.username}) 一共 <b>${user.count}</b> 次`
+        return apiRequest('sendMessage', {
+          chat_id: message.chat.id,
+          text: reply,
+          parse_mode: 'HTML'
+        })
+      }).catch(err => {
+        console.error(err)
+      })
+    } else {
+      Chat.find({ where: { id: message.chat.id } }).then(chat => {
+        return chat.getUsers({ order: 'count DESC' })
+      }).then(users => {
+        const reply = `<b>Rank</b>
+${users.map((user, i) => `${i + 1}. ${user.firstName} ${user.lastName}(@${user.username}) ${user.count}`)}`
+        return apiRequest('sendMessage', {
+          chat_id: message.chat.id,
+          text: reply,
+          parse_mode: 'HTML'
+        })
+      }).catch(err => {
+        console.error(err)
+      })
+    }
+    return res.json({ code: 1 })
+  }
   // Pangu it
   const panguText = pangu.spacing(message.text)
   if (message.text !== panguText) {
-    const reply = `
-<b>${getHello()}！請跟我讀：</b>
+    const reply = `<b>${getHello()}！請跟我讀：</b>
 ${panguText}`
     // Send reply
-    request.post({
-      uri: `${API_URL}/sendMessage`,
-      form: {
-        chat_id: message.chat.id,
-        text: reply,
-        parse_mode: 'HTML',
-        reply_to_message_id: message.message_id
-      }
-    }, (err, response, body) => {
-      if (err) { console.error('[ERROR] Send Message', err) }
-    })
-    // Update database
-    Promise.all([
+    apiRequest('sendMessage', {
+      chat_id: message.chat.id,
+      text: reply,
+      parse_mode: 'HTML',
+      reply_to_message_id: message.message_id
+    }).then(response => {
+      // Update database
+      return Promise.all([
       // Get user
-      User.findOrCreate({
-        where: { id: message.from.id },
-        defaults: {
-          id: message.from.id,
-          username: message.from.username,
-          firstName: message.from.first_name,
-          lastName: message.from.last_name
-        }
-      }),
-      // Get chat
-      Chat.findOrCreate({
-        where: { id: message.chat.id },
-        defaults: {
-          id: message.chat.id,
-          title: message.chat.title
-        }
-      })
-    ]).then(res => {
+        User.find({
+          where: { id: message.from.id },
+          attribute: ['id']
+        }).then(res => {
+          if (res) {
+            return Promise.resolve(res)
+          } else {
+            return User.create({
+              id: message.from.id,
+              username: message.from.username,
+              firstName: message.from.first_name,
+              lastName: message.from.last_name
+            })
+          }
+        }),
+        // Get chat
+        Chat.find({
+          where: { id: message.chat.id },
+          attribute: ['id']
+        }).then(res => {
+          if (res) {
+            return Promise.resolve(res)
+          } else {
+            return Chat.create({
+              id: message.chat.id,
+              title: message.chat.title
+            })
+          }
+        })
+      ])
+    }).then(res => {
       const [user, chat] = res
       return Promise.all([
         user.increment('count', { by: 1 }),
