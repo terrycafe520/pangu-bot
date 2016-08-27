@@ -81,7 +81,7 @@ router.post('/', (req, res) => {
         return chat.getUsers({ order: 'count DESC' })
       }).then(users => {
         const reply = `<b>Rank</b>
-${users.map((user, i) => `${i + 1}. ${user.firstName} ${user.lastName}(@${user.username}) ${user.count}`).join('\n')}`
+${users.map((user, i) => `${i + 1}. ${user.firstName}${user.lastName ? ' ' + user.lastName : ''}(@${user.username}) ${user.count}`).join('\n')}`
         return apiRequest('sendMessage', {
           chat_id: message.chat.id,
           text: reply,
